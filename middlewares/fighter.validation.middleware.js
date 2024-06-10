@@ -6,21 +6,21 @@ const createFighterValid = (req, res, next) => {
 
   try {
     const fighter = fighterService.getOneFighter({ name });
-    if (name === fighter?.name) {
-      throw new Error(`Fighter already exists`);
+    if (fighter) {
+      res.status(400).send(`Fighter already exists`);
+      return;
     }
 
     if (Object.keys(req.body).length !== Object.keys(FIGHTER).length - 1) {
-      throw new Error("Invalid number of fields.");
+      res.status(400).send("Invalid number of fields.");
+      return;
     }
 
     validateFields(req.body);
 
-    res.data = { ...req.body };
     next();
   } catch (err) {
     res.status(400).send(err.message);
-    res.err = err;
   }
 };
 
@@ -29,28 +29,29 @@ const updateFighterValid = (req, res, next) => {
 
   try {
     const fighter = fighterService.getOneFighter({ id });
-    if (id !== fighter?.id) {
-      res.status(404);
-      throw new Error(`This fighter id ${id} was not found.`);
-    }
-
-    const fighterFound = fighterService.getOneFighter(req.body.name);
-    if (req.body.name === fighterFound?.name) {
-      throw new Error(`Fighter already exists`);
+    if (!fighter) {
+      res.status(404).send(`This fighter id ${id} was not found.`);
+      return;
     }
 
     if (!Object.keys(req.body).length) {
-      res.status(400);
-      throw new Error("No fields to update.");
+      res.status(400).send("No fields to update.");
+      return;
+    }
+
+    if (req.body.name) {
+      const fighterFound = fighterService.getOneFighter({ name: req.body.name });
+      if (fighterFound && fighterFound.id !== id) {
+        res.status(400).send(`Fighter already exists`);
+        return;
+      }
     }
 
     validateFields(req.body);
 
-    res.data = { ...req.body };
     next();
   } catch (err) {
     res.status(400).send(err.message);
-    res.err = err;
   }
 };
 
@@ -78,10 +79,10 @@ const validatePower = (power) => {
   if (
     !power ||
     isNaN(Number(power)) ||
-    Number(power) < 0 ||
+    Number(power) < 1 ||
     Number(power) > 100
   ) {
-    throw new Error("Power must be in the range 0 - 100.");
+    throw new Error("Power must be in the range 1 - 100.");
   }
 };
 

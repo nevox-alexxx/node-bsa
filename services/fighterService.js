@@ -16,8 +16,12 @@ class FighterService {
     if (existingFighter) {
       throw new Error(`Fighter with name ${body.name} already exists`);
     }
+
     const newFighter = fighterRepository.create(body);
-    return newFighter || null;
+    if (!newFighter) {
+      throw new Error("Failed to create fighter");
+    }
+    return newFighter;
   }
 
   updateFighter(id, body) {
@@ -26,7 +30,10 @@ class FighterService {
       throw new Error(`Fighter with id ${id} not found`);
     }
     const updatedFighter = fighterRepository.update(id, body);
-    return updatedFighter || null;
+    if (!updatedFighter) {
+      throw new Error("Failed to update fighter");
+    }
+    return updatedFighter;
   }
 
   deleteFighter(id) {
@@ -35,7 +42,10 @@ class FighterService {
       throw new Error(`Fighter with id ${id} does not exist`);
     }
     const deletedFighter = fighterRepository.delete(id);
-    return deletedFighter || null;
+    if (!deletedFighter) {
+      throw new Error("Failed to delete fighter");
+    }
+    return deletedFighter;
   }
 }
 

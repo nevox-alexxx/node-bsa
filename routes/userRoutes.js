@@ -10,9 +10,9 @@ const router = Router();
 
 router.get(
   "/",
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
-      const users = userService.getUsers();
+      const users = await userService.getUsers();
       res.status(200).send(users);
     } catch (err) {
       res.status(404).send({ error: true, message: err.message });
@@ -25,10 +25,10 @@ router.get(
 
 router.get(
   "/:id",
-  (req, res, next) => {
+  async (req, res, next) => {
     const { id } = req.params;
     try {
-      const user = userService.search({ id });
+      const user = await userService.search({ id });
       if (!user) {
         res.status(404).send({ error: true, message: "User not found" });
       } else {
@@ -46,17 +46,27 @@ router.get(
 router.post(
   "/",
   createUserValid,
-  (req, res, next) => {
+  async (req, res, next) => {
     const { firstName, lastName, email, phoneNumber, password } = req.body;
     try {
-      const newUser = userService.createUser({
+      const existingUserByEmail = await userService.search({ email });
+      if (existingUserByEmail) {
+        throw new Error('Email already exists');
+      }
+
+      const existingUserByPhoneNumber = await userService.search({ phoneNumber });
+      if (existingUserByPhoneNumber) {
+        throw new Error('Phone number already exists');
+      }
+
+      const newUser = await userService.createUser({
         firstName,
         lastName,
         email,
         phoneNumber,
         password,
       });
-      res.status(201).send(newUser);
+      res.status(200).send(newUser);
     } catch (err) {
       res.status(400).send({ error: true, message: err.message });
     } finally {
@@ -69,14 +79,14 @@ router.post(
 router.put(
   "/:id",
   updateUserValid,
-  (req, res, next) => {
+  async (req, res, next) => {
     const { id } = req.params;
     try {
-      const user = userService.search({ id });
+      const user = await userService.search({ id });
       if (!user) {
         res.status(404).send({ error: true, message: "User not found" });
       } else {
-        const updatedUser = userService.updateUser(id, req.body);
+        const updatedUser = await userService.updateUser(id, req.body);
         res.status(200).send(updatedUser);
       }
     } catch (err) {
@@ -87,24 +97,22 @@ router.put(
   },
   responseMiddleware
 );
+
 router.delete(
   "/:id",
-  (req, res, next) => {
+  async (req, res, next) => {
     const { id } = req.params;
 
     try {
-      const user = userService.getOneUser({ id });
+      const user = await userService.getOneUser({ id });
       if (!user) {
-        res.status(404);
-        res.err = new Error(`User with id ${id} does not exist`);
+        res.status(404).send({ error: true, message: `User with id ${id} does not exist` });
       } else {
-        userService.deleteUser(id);
-        res.data = { message: `User with id ${id} successfully deleted` };
-        res.status(200);
+        await userService.deleteUser(id);
+        res.status(200).send({ message: `User with id ${id} successfully deleted` });
       }
     } catch (err) {
-      res.err = err;
-      res.status(400);
+      res.status(400).send({ error: true, message: err.message });
     } finally {
       next();
     }

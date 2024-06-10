@@ -6,6 +6,16 @@ class UserService {
   }
 
   createUser(user) {
+    const existingUserByEmail = userRepository.getOne({ email: user.email });
+    if (existingUserByEmail) {
+      throw new Error('Email already exists');
+    }
+
+    const existingUserByPhoneNumber = userRepository.getOne({ phoneNumber: user.phoneNumber });
+    if (existingUserByPhoneNumber) {
+      throw new Error('Phone number already exists');
+    }
+
     const newUser = userRepository.create(user);
     if (!newUser) {
       throw new Error("Failed to create user");

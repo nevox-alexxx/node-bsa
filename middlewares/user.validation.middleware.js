@@ -9,30 +9,31 @@ const createUserValid = (req, res, next) => {
     const existingPhoneNumber = userService.search({ phoneNumber });
 
     if (existingEmail || existingPhoneNumber) {
-      res.status(400);
-      throw new Error(`User with the provided email or phone number already exists.`);
+      res.status(400).send(`User with the provided email or phone number already exists.`);
+      return;
     }
 
     if (Object.keys(req.body).length !== Object.keys(USER).length - 1) {
-      throw new Error("Invalid number of fields.");
+      res.status(400).send("Invalid number of fields.");
+      return;
     }
 
     for (const field in req.body) {
       if (!USER.hasOwnProperty(field)) {
-        throw new Error(`Invalid field ${field}.`);
+        res.status(400).send(`Invalid field ${field}.`);
+        return;
       }
       if (!req.body[field]) {
-        throw new Error(`Empty field ${field}.`);
+        res.status(400).send(`Empty field ${field}.`);
+        return;
       }
     }
 
     validateFields(req.body);
 
-    res.data = { ...req.body };
     next();
   } catch (err) {
     res.status(400).send(err.message);
-    res.err = err;
   }
 };
 
@@ -44,35 +45,37 @@ const updateUserValid = (req, res, next) => {
 
     if (!user) {
       res.status(404).send("User does not exist.");
+      return;
     }
 
     if (!Object.keys(req.body).length) {
-      throw new Error("No fields to update.");
+      res.status(400).send("No fields to update.");
+      return;
     }
 
     const existingUser = userService.search({ email: req.body.email });
 
     if (existingUser) {
-      throw new Error(`User with the provided email already exists.`);
+      res.status(400).send(`User with the provided email already exists.`);
+      return;
     }
 
     for (const field in req.body) {
       if (!USER.hasOwnProperty(field)) {
-        throw new Error(`Invalid field ${field}.`);
+        res.status(400).send(`Invalid field ${field}.`);
+        return;
       }
       if (!req.body[field]) {
-        throw new Error(`Empty field ${field}.`);
+        res.status(400).send(`Empty field ${field}.`);
+        return;
       }
     }
 
     validateFields(req.body);
 
-    res.status(200);
-    res.data = { ...req.body };
     next();
   } catch (err) {
     res.status(400).send(err.message);
-    res.err = err;
   }
 };
 
@@ -96,8 +99,7 @@ const validateFields = (body) => {
 
 const validateEmail = (email) => {
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  if (!emailPattern.test(email)) {
+  if (!emailPattern.test(email) || !email.endsWith("@gmail.com")) {
     throw new Error("Invalid email");
   }
 };
@@ -109,7 +111,7 @@ const validatePassword = (password) => {
 };
 
 const validatePhone = (phone) => {
-  if (!phone || !phone.match(/\+380\d{9}/g)) {
+  if (!phone || !phone.match(/^\+380\d{9}$/)) {
     throw new Error("Invalid phone number. Please enter the number in this format: +380xxxxxxxxx.");
   }
 };

@@ -10,9 +10,9 @@ const router = Router();
 
 router.get(
   "/",
-  (req, res, next) => {
+  async (req, res, next) => {
     try {
-      res.data = fighterService.getAllFighters();
+      res.data = await fighterService.getAllFighters();
       res.status(200);
     } catch (err) {
       res.err = err;
@@ -26,11 +26,11 @@ router.get(
 
 router.get(
   "/:id",
-  (req, res, next) => {
+  async (req, res, next) => {
     const { id } = req.params;
 
     try {
-      const fighter = fighterService.getOneFighter({ id });
+      const fighter = await fighterService.getOneFighter({ id });
       if (!fighter) {
         res.status(404);
         res.err = new Error(`Fighter with id ${id} not found`);
@@ -51,17 +51,22 @@ router.get(
 router.post(
   "/",
   createFighterValid,
-  (req, res, next) => {
+  async (req, res, next) => {
     const { name, power, defense } = req.body;
 
     try {
-      res.data = fighterService.createFighter({
+      const existingFighterByName = await fighterService.search({ name });
+      if (existingFighterByName) {
+        throw new Error('Fighter name already exists');
+      }
+
+      res.data = await fighterService.createFighter({
         name,
         power,
         defense,
         health: 100,
       });
-      res.status(201);
+      res.status(200);
     } catch (err) {
       res.err = err;
       res.status(400);
@@ -75,11 +80,11 @@ router.post(
 router.put(
   "/:id",
   updateFighterValid,
-  (req, res, next) => {
+  async (req, res, next) => {
     const { id } = req.params;
 
     try {
-      const updatedFighter = fighterService.updateFighter(id, req.body);
+      const updatedFighter = await fighterService.updateFighter(id, req.body);
       if (!updatedFighter) {
         res.status(404);
         res.err = new Error(`Fighter with id ${id} not found`);
@@ -99,22 +104,19 @@ router.put(
 
 router.delete(
   "/:id",
-  (req, res, next) => {
+  async (req, res, next) => {
     const { id } = req.params;
 
     try {
-      const fighter = fighterService.getOneFighter({ id });
+      const fighter = await fighterService.getOneFighter({ id });
       if (!fighter) {
-        res.status(404);
-        res.err = new Error(`Fighter with id ${id} does not exist`);
+        res.status(404).send({ error: true, message: `Fighter with id ${id} does not exist` });
       } else {
-        fighterService.deleteFighter(id);
-        res.data = { message: `Fighter with id ${id} successfully deleted` };
-        res.status(200);
+        await fighterService.deleteFighter(id);
+        res.status(200).send({ message: `Fighter with id ${id} successfully deleted` });
       }
     } catch (err) {
-      res.err = err;
-      res.status(400);
+      res.status(400).send({ error: true, message: err.message });
     } finally {
       next();
     }
