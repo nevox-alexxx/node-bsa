@@ -30,7 +30,7 @@ const updateFighterValid = (req, res, next) => {
   try {
     const fighter = fighterService.getOneFighter({ id });
     if (!fighter) {
-      res.status(404).send(`This fighter id ${id} was not found.`);
+      res.status(404).send(`Fighter with id ${id} not found.`);
       return;
     }
 
@@ -42,7 +42,7 @@ const updateFighterValid = (req, res, next) => {
     if (req.body.name) {
       const fighterFound = fighterService.getOneFighter({ name: req.body.name });
       if (fighterFound && fighterFound.id !== id) {
-        res.status(400).send(`Fighter already exists`);
+        res.status(400).send(`Fighter with name ${req.body.name} already exists.`);
         return;
       }
     }
@@ -77,7 +77,6 @@ const validateName = (name) => {
 
 const validatePower = (power) => {
   if (
-    !power ||
     isNaN(Number(power)) ||
     Number(power) < 1 ||
     Number(power) > 100
@@ -88,7 +87,6 @@ const validatePower = (power) => {
 
 const validateDefense = (defense) => {
   if (
-    !defense ||
     isNaN(Number(defense)) ||
     Number(defense) < 1 ||
     Number(defense) > 10

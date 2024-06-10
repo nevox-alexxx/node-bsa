@@ -10,13 +10,17 @@ const router = Router();
 
 router.get(
   "/",
-  async (req, res, next) => {
+  (req, res, next) => {
     try {
-      res.data = await fighterService.getAllFighters();
-      res.status(200);
+      const fighters = fighterService.getAllFighters();
+      if (!fighters.length) {
+        res.status(404).json({ error: true, message: "No fighters found" });
+      } else {
+        res.data = fighters;
+        res.status(200);
+      }
     } catch (err) {
-      res.err = err;
-      res.status(404);
+      res.status(404).json({ error: true, message: err.message });
     } finally {
       next();
     }
@@ -26,23 +30,21 @@ router.get(
 
 router.get(
   "/:id",
-  async (req, res, next) => {
+  (req, res, next) => {
     const { id } = req.params;
 
     try {
-      const fighter = await fighterService.getOneFighter({ id });
+      const fighter = fighterService.getOneFighter({ id });
       if (!fighter) {
-        res.status(404);
-        res.err = new Error(`Fighter with id ${id} not found`);
+        res.status(404).json({ error: true, message: `Fighter with id ${id} not found` });
       } else {
         res.data = fighter;
         res.status(200);
       }
     } catch (err) {
-      res.err = err;
-      res.status(404);
+      res.status(404).json({ error: true, message: err.message });
     } finally {
-      return next();
+      next();
     }
   },
   responseMiddleware
@@ -51,25 +53,20 @@ router.get(
 router.post(
   "/",
   createFighterValid,
-  async (req, res, next) => {
+  (req, res, next) => {
     const { name, power, defense } = req.body;
 
     try {
-      const existingFighterByName = await fighterService.search({ name });
-      if (existingFighterByName) {
-        throw new Error('Fighter name already exists');
-      }
-
-      res.data = await fighterService.createFighter({
+      const newFighter = fighterService.createFighter({
         name,
         power,
         defense,
         health: 100,
       });
+      res.data = newFighter;
       res.status(200);
     } catch (err) {
-      res.err = err;
-      res.status(400);
+      res.status(400).json({ error: true, message: err.message });
     } finally {
       next();
     }
@@ -80,21 +77,19 @@ router.post(
 router.put(
   "/:id",
   updateFighterValid,
-  async (req, res, next) => {
+  (req, res, next) => {
     const { id } = req.params;
 
     try {
-      const updatedFighter = await fighterService.updateFighter(id, req.body);
+      const updatedFighter = fighterService.updateFighter(id, req.body);
       if (!updatedFighter) {
-        res.status(404);
-        res.err = new Error(`Fighter with id ${id} not found`);
+        res.status(404).json({ error: true, message: `Fighter with id ${id} not found` });
       } else {
         res.data = updatedFighter;
         res.status(200);
       }
     } catch (err) {
-      res.err = err;
-      res.status(400);
+      res.status(400).json({ error: true, message: err.message });
     } finally {
       next();
     }
@@ -104,19 +99,20 @@ router.put(
 
 router.delete(
   "/:id",
-  async (req, res, next) => {
+  (req, res, next) => {
     const { id } = req.params;
 
     try {
-      const fighter = await fighterService.getOneFighter({ id });
+      const fighter = fighterService.getOneFighter({ id });
       if (!fighter) {
-        res.status(404).send({ error: true, message: `Fighter with id ${id} does not exist` });
+        res.status(404).json({ error: true, message: `Fighter with id ${id} does not exist` });
       } else {
-        await fighterService.deleteFighter(id);
-        res.status(200).send({ message: `Fighter with id ${id} successfully deleted` });
+        fighterService.deleteFighter(id);
+        res.data = { message: `Fighter with id ${id} successfully deleted` };
+        res.status(200);
       }
     } catch (err) {
-      res.status(400).send({ error: true, message: err.message });
+      res.status(400).json({ error: true, message: err.message });
     } finally {
       next();
     }
